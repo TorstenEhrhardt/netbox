@@ -124,6 +124,7 @@ class TreeNodeMultipleChoiceFilter(django_filters.ModelMultipleChoiceFilter):
     """
 
     _spectacular_annotation = {}
+
     def __init__(self, *args, **kwargs):
         if 'field_name' in kwargs and 'to_field_name' in kwargs:
             to_field = kwargs['queryset'].model._meta.get_field(kwargs['to_field_name'])
@@ -153,7 +154,8 @@ class TreeNodeMultipleChoiceFilter(django_filters.ModelMultipleChoiceFilter):
             return OpenApiTypes.INT
         elif isinstance(field_type, models.FloatField) or issubclass(field_type, models.FloatField):
             return OpenApiTypes.FLOAT
-        return OpenApiTypes.STR    
+        return OpenApiTypes.STR
+
 
 class NullableCharFieldFilter(django_filters.CharFilter):
     """
