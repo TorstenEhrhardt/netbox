@@ -5,6 +5,8 @@ from django.core.exceptions import ValidationError
 from django_filters.constants import EMPTY_VALUES
 from drf_spectacular.utils import extend_schema_field
 from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.plumbing import build_basic_type
+from django.db import models
 
 __all__ = (
     'ContentTypeFilter',
@@ -120,6 +122,22 @@ class TreeNodeMultipleChoiceFilter(django_filters.ModelMultipleChoiceFilter):
     """
     Filters for a set of Models, including all descendant models within a Tree.  Example: [<Region: R1>,<Region: R2>]
     """
+
+    _spectacular_annotation = {}
+    def __init__(self, *args, **kwargs):
+        if 'field_name' in kwargs and 'to_field_name' in kwargs:
+            to_field = kwargs['queryset'].model._meta.get_field(kwargs['to_field_name'])
+            field_type = type(to_field)
+            openapi_type = self.__get_openapi_type(field_type)
+            field = build_basic_type(openapi_type)
+            self._spectacular_annotation = {
+                'field': {
+                    **field,
+                    'description': kwargs['label'] if 'label' in kwargs else ''
+                }
+            }
+        super().__init__(*args, **kwargs)
+
     def get_filter_predicate(self, v):
         # Null value filtering
         if v is None:
@@ -130,6 +148,12 @@ class TreeNodeMultipleChoiceFilter(django_filters.ModelMultipleChoiceFilter):
         value = [node.get_descendants(include_self=True) if not isinstance(node, str) else node for node in value]
         return super().filter(qs, value)
 
+    def __get_openapi_type(self, field_type):
+        if isinstance(field_type, models.IntegerField) or issubclass(field_type, models.IntegerField):
+            return OpenApiTypes.INT
+        elif isinstance(field_type, models.FloatField) or issubclass(field_type, models.FloatField):
+            return OpenApiTypes.FLOAT
+        return OpenApiTypes.STR    
 
 class NullableCharFieldFilter(django_filters.CharFilter):
     """
